@@ -45,33 +45,47 @@ class OfficeComMaker
     }
 
     /**
-     * html2Word : html转word
-     * @param $htmlPath : html路径
+     * openFile : 打开文件
+     * @param $filePath : 文件路径
      * @return object
      * @throws \Exception
      ** created by zhangjian at 2021/1/21 15:07
      */
-    public function html2Word($htmlPath)
+    public function openFile($filePath)
     {
         //word另存为第二个传参需要32位
 
-        $htmlPath = str_replace("\\", "/", $htmlPath);
-        if (!file_exists($htmlPath)) {
-            throw new \Exception("html文件不存在");
+        $filePath = str_replace("\\", "/", $filePath);
+        if (!file_exists($filePath)) {
+            throw new \Exception("文件路径不存在");
         }
         try {
             self::$Word->visible = 0;
-            $doc = self::$Word->Documents->Open($htmlPath, false, false, false, "1", "1", true);
+            $doc = self::$Word->Documents->Open($filePath, false, false, false, "1", "1", true);
 
             $doc->final = false;
             $doc->Saved = true;
             //保持和系统路径的斜杠一样
-            self::$docUrl = dirname($htmlPath);
-            self::$docName = substr(basename($htmlPath), 0, strrpos(basename($htmlPath), "."));
+            self::$docUrl = dirname($filePath);
+            self::$docName = substr(basename($filePath), 0, strrpos(basename($filePath), "."));
         } catch (\Exception $exception) {
             $this->handleException($exception);
         }
         return self::$intance;
+    }
+
+    /**
+     * getFileContent : 获取文本内容
+     * @return mixed
+     ** created by zhangjian at 2021/1/22 15:03
+     *
+     */
+    public function getFileContent(){
+        try {
+            return self::$Word->ActiveDocument->content->Text;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
     }
 
     /**

@@ -10,7 +10,7 @@ require "node/html2word/OfficeComMaker.php";
 $htmlPath = dirname(__FILE__)."/resources/10.html";
 
 $office = \html2word\OfficeComMaker::getInstance();
-if($office->html2Word($htmlPath)->BaseLineAlignment()->Save("docx")){
+if($office->openFile($htmlPath)->BaseLineAlignment()->Save("docx")){
     return "html转word成功";
 }
 return "html转word失败";
