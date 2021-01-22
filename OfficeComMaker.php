@@ -5,20 +5,36 @@
  * Date: 2021/1/21
  * Time: 14:59
  */
+
 namespace html2word;
 
-class OfficeComMaker{
+class OfficeComMaker
+{
     private static $intance;
     private static $Word;
+    private static $docUrl;
+    private static $docName;
 
-    public static function getInstance(){
-        if(!self::$intance){
+    private $wordType = [
+        8 => "html",
+        16 => "docx"
+    ];
+
+    /**
+     * getInstance : 单例 实例化
+     * @return OfficeComMaker
+     ** created by zhangjian at 2021/1/22 14:07
+     */
+    public static function getInstance()
+    {
+        if (!self::$intance) {
             self::$intance = new OfficeComMaker();
         }
         return self::$intance;
     }
 
-    public function getWordVersion(){
+    public function getWordVersion()
+    {
         return self::$Word->Version;
     }
 
@@ -30,39 +46,157 @@ class OfficeComMaker{
 
     /**
      * html2Word : html转word
-     * @param $htmlPath html路径
-     * @param $fileName 默认当前目录下
+     * @param $htmlPath : html路径
+     * @return object
      * @throws \Exception
      ** created by zhangjian at 2021/1/21 15:07
      */
-    public function html2Word($htmlPath,$fileName){
+    public function html2Word($htmlPath)
+    {
         //word另存为第二个传参需要32位
-        $wordParameter = new \VARIANT(16, VT_I4);
-        if(!file_exists($htmlPath)){
+
+        $htmlPath = str_replace("\\", "/", $htmlPath);
+        if (!file_exists($htmlPath)) {
             throw new \Exception("html文件不存在");
         }
-        try{
-            self::$Word->visible =0 ;
+        try {
+            self::$Word->visible = 0;
             $doc = self::$Word->Documents->Open($htmlPath, false, false, false, "1", "1", true);
 
             $doc->final = false;
             $doc->Saved = true;
             //保持和系统路径的斜杠一样
-            $doc->SaveAs2($fileName,$wordParameter);
-        }catch (\Exception $e){
-            //释放资源
-            $this->releaseWord();
-            var_dump($e);
+            self::$docUrl = dirname($htmlPath);
+            self::$docName = substr(basename($htmlPath), 0, strrpos(basename($htmlPath), "."));
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
         }
+        return self::$intance;
+    }
+
+    /**
+     * Save : 另存为
+     * @param $type :另存为的文件类型
+     * @param $fileName : 文件名称 不填则为源文件名称
+     * @throws \Exception
+     * @return boolean
+     ** created by zhangjian at 2021/1/22 13:46
+     *
+     */
+    public function Save($type = "docx", $fileName = "")
+    {
+
+        if($index = array_search($type,$this->wordType) !== false){
+            $wordParameter = new \VARIANT($index, VT_I4);
+        }else{
+            //16为docx文档
+            $wordParameter = $index= 16;
+        }
+
+        //设置文档名称
+        if (empty($fileName)) {
+            if (!self::$docUrl) {
+                self::$docUrl = dirname(__FILE__);
+            }
+            if (!self::$docName) {
+                self::$docName = $this->generateDocName();
+            }
+            $fileName = self::$docUrl . "/" . self::$docName . ".".$type;
+        }
+        $fileName = str_replace("\\", "/", $fileName);
+        try {
+            self::$Word->ActiveDocument->SaveAs2($fileName, $wordParameter);
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+
         $this->releaseWord();
+        return true;
+    }
+
+    /**
+     * BaseLineAlignment :  指定行中字体的垂直位置 （垂直）
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function BaseLineAlignment()
+    {
+        try {
+            self::$Word->ActiveDocument->content->ParagraphFormat->BaseLineAlignment = 1;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+        return self::$intance;
+    }
+
+    /**
+     * Alignment : 指定行中字体的水平位置(水平)
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function Alignment()
+    {
+        try {
+            self::$Word->ActiveDocument->content->ParagraphFormat->Alignment = 1;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+
+        return self::$intance;
+    }
+
+    /**
+     * LineSpacing : 行间距
+     * @param $lineSpace : 最小12
+     * @return object
+     * @throws \Exception
+     ** created by zhangjian at 2021/1/22 13:38
+     *
+     */
+    public function LineSpacing($lineSpace = 12)
+    {
+        try {
+            self::$Word->ActiveDocument->content->ParagraphFormat->LineSpacing = $lineSpace;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+
+        return self::$intance;
     }
 
     /**
      * releaseWord : 释放资源
      ** created by zhangjian at 2021/1/21 15:35
      */
-    private function releaseWord(){
+    private function releaseWord()
+    {
         self::$Word->Quit();
         self::$Word = null;
+    }
+
+    /**
+     * handleException : 处理异常
+     * @param $exception
+     * @return   \Exception
+     ** created by zhangjian at 2021/1/22 14:17
+     */
+    private function handleException(\Exception $exception)
+    {
+        //释放资源
+        $this->releaseWord();
+        return json_encode($exception);
+    }
+
+    /**
+     * generateDocName : 生成文档名称
+     * @param $prefix : 前缀
+     * @return float
+     ** created by zhangjian at 2021/1/22 14:17
+     */
+    private function generateDocName($prefix = "")
+    {
+        //获取时间戳
+        list($msec, $sec) = explode(' ', microtime());
+        $msectime = (float)sprintf('%.0f', (floatval($msec) + floatval($sec)) * 1000);
+
+        return $prefix . $msectime . rand(1111, 9999);
     }
 }
