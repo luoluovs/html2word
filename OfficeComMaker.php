@@ -47,7 +47,7 @@ class OfficeComMaker
     /**
      * openFile : 打开文件
      * @param $filePath : 文件路径
-     * @return object
+     * @return $this
      * @throws \Exception
      ** created by zhangjian at 2021/1/21 15:07
      */
@@ -97,7 +97,7 @@ class OfficeComMaker
      ** created by zhangjian at 2021/1/22 13:46
      *
      */
-    public function Save($type = "docx", $fileName = "")
+    public function SaveAs($type = "docx", $fileName = "")
     {
 
         if($index = array_search($type,$this->wordType) !== false){
@@ -129,7 +129,87 @@ class OfficeComMaker
     }
 
     /**
+     * SaveLinkToLocal : 保存word文档内所有图片链接到本地
+     * @return $this
+     ** created by zhangjian at 2021/1/27 16:21
+     *
+     */
+    public function SaveLinkToLocal(){
+        try{
+            $shapes = self::$Word->ActiveDocument->InlineShapes;
+            foreach ($shapes as $shape){
+                if($shape->Type == 4){
+                    $shape->LinkFormat->SavePictureWithDocument = 1;
+                    $shape->LinkFormat->BreakLink();
+                }
+            }
+            //self::$Word->ActiveDocument->Save();
+        }catch (\Exception $exception){
+            $this->handleException($exception);
+        }
+        //$this->releaseWord();
+        return self::$intance;
+    }
+
+    /**
+     * SavePictureWithDocument :  图片和文档一起保存
+     * @return $this
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function SavePictureWithDocument()
+    {
+        try {
+            self::$Word->ActiveDocument->content->LinkFormat->SavePictureWithDocument  = 1;
+            $this->releaseWord();
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+        return self::$intance;
+    }
+
+    /**
+     * Shapes :  获取Shapes
+     * @return $this
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function getShapes(){
+        try {
+            return self::$Word->ActiveDocument->Shapes;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+    }
+
+    /**
+     * getInlineShapes :  获取InlineShapes 代表文档、区域或所选内容中的所有内嵌形状的对象的集合
+     * @return $this
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function getInlineShapes(){
+        try {
+            return self::$Word->ActiveDocument->InlineShapes;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+    }
+
+    /**
+     * AutoUpdate :  自动更新链接
+     * @return $this
+     ** created by zhangjian at 2021/1/22 13:17
+     */
+    public function AutoUpdate(){
+        try {
+            self::$Word->ActiveDocument->content->LinkFormat->AutoUpdate  = 1;
+        } catch (\Exception $exception) {
+            $this->handleException($exception);
+        }
+        return self::$intance;
+    }
+
+    /**
      * BaseLineAlignment :  指定行中字体的垂直位置 （垂直）
+     * @return $this
      ** created by zhangjian at 2021/1/22 13:17
      */
     public function BaseLineAlignment()
@@ -144,6 +224,7 @@ class OfficeComMaker
 
     /**
      * Alignment : 指定行中字体的水平位置(水平)
+     * @return $this
      ** created by zhangjian at 2021/1/22 13:17
      */
     public function Alignment()
@@ -160,7 +241,7 @@ class OfficeComMaker
     /**
      * LineSpacing : 行间距
      * @param $lineSpace : 最小12
-     * @return object
+     * @return $this
      * @throws \Exception
      ** created by zhangjian at 2021/1/22 13:38
      *
@@ -183,7 +264,7 @@ class OfficeComMaker
     private function releaseWord()
     {
         self::$Word->Quit();
-        self::$Word = null;
+        //self::$Word = null;
     }
 
     /**
